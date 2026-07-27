@@ -13,6 +13,5 @@ export const config = {
   cloverPrivateToken: () => requiredEnv("CLOVER_PRIVATE_TOKEN"),
   cloverApiBaseUrl: () =>
     process.env.CLOVER_API_BASE_URL ?? "https://api.clover.com",
-  cloverWebhookSecret: () => requiredEnv("CLOVER_WEBHOOK_SECRET"),
-  cronSecret: () => requiredEnv("CRON_SECRET")
+  cloverWebhookSecret: () => requiredEnv("CLOVER_WEBHOOK_SECRET")
 };

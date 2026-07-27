@@ -40,10 +40,9 @@ Create these in Vercel's Environment Variables UI; do not commit them.
 | `CLOVER_MERCHANT_ID` | Clover merchant ID |
 | `CLOVER_PRIVATE_TOKEN` | Clover Ecommerce token created for **Hosted checkout** |
 | `CLOVER_WEBHOOK_SECRET` | Signing secret generated next to the webhook URL in Clover |
-| `CRON_SECRET` | A random, long secret used by Vercel Cron |
 | `CLOVER_API_BASE_URL` | `https://apisandbox.dev.clover.com` in sandbox; change to Clover's production API base URL only when going live |
 
-Vercel Cron automatically sends `Authorization: Bearer $CRON_SECRET` when `CRON_SECRET` is defined. The cron endpoint releases ticket inventory held by sessions that expired without payment.
+This project works on Vercel's free Hobby plan. Expired checkout holds are released safely when the next customer starts a checkout. If you later use a paid scheduler, you can add a periodic cleanup job as an optimization, but it is not required for payment processing.
 
 ## Framer integration contract
 

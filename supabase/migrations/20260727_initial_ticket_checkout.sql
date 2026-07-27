@@ -64,7 +64,20 @@ as $$
 declare
   v_ticket_type public.ticket_types;
   v_order_id uuid;
+  v_expired_order public.orders;
 begin
+  -- On Hobby Vercel, no frequent cron is available. Releasing expired holds here
+  -- keeps inventory accurate whenever a new customer begins checkout.
+  for v_expired_order in
+    update public.orders set status = 'expired'
+    where status = 'pending' and checkout_expires_at <= now()
+    returning *
+  loop
+    update public.ticket_types
+    set inventory_remaining = inventory_remaining + v_expired_order.quantity
+    where id = v_expired_order.ticket_type_id;
+  end loop;
+
   if p_quantity < 1 or p_quantity > 10 then
     raise exception 'Ticket quantity is not available';
   end if;
