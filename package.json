@@ -1,0 +1,22 @@
+{
+  "name": "clover-ticket-checkout-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vercel and Supabase backend for a Clover Hosted Checkout ticket storefront.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.3.4",
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2",
+    "vercel": "^41.3.2"
+  }
+}
