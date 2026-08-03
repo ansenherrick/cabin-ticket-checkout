@@ -57,6 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   if (reservationError || !reservation?.[0]) {
+    console.error("Ticket reservation failed", {
+      code: reservationError?.code,
+      message: reservationError?.message,
+      hint: reservationError?.hint
+    });
     const soldOut = reservationError?.message.includes("not available");
     return res.status(soldOut ? 409 : 500).json({
       error: soldOut ? "Those tickets are no longer available." : "Unable to reserve tickets."
