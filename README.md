@@ -17,7 +17,7 @@ The Framer site never receives the Clover private token or the Supabase service-
 ## Deploy it
 
 1. Create a new GitHub repository and upload the complete `web-backend` directory to it. Do not upload credential files.
-2. Create a new Supabase project. In its SQL Editor, run [`supabase/migrations/20260727_initial_ticket_checkout.sql`](supabase/migrations/20260727_initial_ticket_checkout.sql).
+2. Create a new Supabase project. In its SQL Editor, run every file in [`supabase/migrations`](supabase/migrations) in filename order. Existing projects must run the newest [checkout-safety migration](supabase/migrations/20260803_checkout_safety.sql) before deploying its matching API code.
 3. Add each ticket tier in Supabase's Table Editor under `ticket_types`. Enter prices as whole cents: `2500` is $25.00. Set `inventory_remaining` to the number available.
 4. Import the GitHub repository into Vercel. Use the default build settings; these are Vercel serverless functions, not a frontend build.
 5. Add the environment variables listed below in Vercel's Production, Preview, and Development environments as appropriate.
@@ -52,6 +52,7 @@ Your Framer code override or custom component should call this endpoint from the
 
 ```json
 {
+  "checkoutAttemptId": "a-new-UUID-created-once-per-button-attempt",
   "ticketTypeId": "UUID_FROM_SUPABASE",
   "quantity": 2,
   "customer": {
@@ -62,6 +63,8 @@ Your Framer code override or custom component should call this endpoint from the
   }
 }
 ```
+
+`checkoutAttemptId` is required. The browser must retain it while retrying the same click; the API returns the existing unexpired Clover checkout URL instead of creating a second order. Use the ready-to-paste [Framer component](framer/TicketCheckout.tsx), which supplies this value and blocks repeat clicks synchronously.
 
 On a successful response, redirect the browser to `checkoutUrl`:
 
@@ -84,6 +87,12 @@ Only use a `paid` response to show ticket IDs. A customer redirect is not proof 
 5. Confirm all four cases: approved payment issues the expected number of tickets, declined payment restores inventory, an abandoned checkout restores inventory after expiry, and a duplicate webhook does not create duplicate tickets.
 
 For current Clover details, use [Create a Hosted Checkout session](https://docs.clover.com/dev/docs/creating-a-hosted-checkout-session), [redirect URLs](https://docs.clover.com/dev/docs/redirecting-customers), and [webhook validation](https://docs.clover.com/dev/docs/ecomm-hosted-checkout-webhook).
+
+## Checkout safety
+
+The server requires a unique `checkoutAttemptId` for each buyer intent. It returns the existing unexpired checkout URL if a browser retries that intent, rather than creating a second Clover session. The supplied Framer component also locks immediately on the first submit. Replace existing Framer component instances after updating their source, then republish the live site.
+
+Approved Clover webhooks are reconciled by checkout session ID and payment ID. An unmatched approved payment now returns an error and emits safe IDs in Vercel logs instead of being silently acknowledged.
 
 ## Not included yet
 

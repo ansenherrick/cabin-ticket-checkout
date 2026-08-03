@@ -30,6 +30,15 @@ function signatureIsValid(signature: string | undefined, rawBody: Buffer): boole
   return expectedBuffer.length === receivedBuffer.length && timingSafeEqual(expectedBuffer, receivedBuffer);
 }
 
+function nestedText(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (value && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    return nestedText(object.checkoutSessionId ?? object.checkout_session_id ?? object.id ?? "");
+  }
+  return "";
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return methodNotAllowed(res, "POST");
 
@@ -45,18 +54,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const payload = JSON.parse(rawBody.toString("utf8")) as Record<string, unknown>;
     const type = String(payload.type ?? payload.Type ?? "").toUpperCase();
     const status = String(payload.status ?? payload.Status ?? "").toUpperCase();
-    const checkoutSessionId = String(payload.data ?? payload.Data ?? "");
-    const paymentId = String(payload.id ?? payload.Id ?? "");
+    const checkoutSessionId = nestedText(payload.data ?? payload.Data);
+    const paymentId = nestedText(payload.id ?? payload.Id);
 
     if (type !== "PAYMENT" || !checkoutSessionId) return res.status(200).json({ received: true });
 
     const supabase = supabaseAdmin();
     if (status === "APPROVED") {
-      const { error } = await supabase.rpc("mark_order_paid", {
+      const { data: outcome, error } = await supabase.rpc("record_approved_clover_payment", {
         p_clover_session_id: checkoutSessionId,
         p_clover_payment_id: paymentId || null
       });
       if (error) throw error;
+      if (outcome !== "paid" && outcome !== "already_paid") {
+        console.error("Approved Clover payment could not be reconciled", {
+          checkoutSessionId,
+          paymentId,
+          outcome
+        });
+        return res.status(500).json({ error: "Approved payment could not be reconciled." });
+      }
     } else if (status === "DECLINED") {
       const { error } = await supabase.rpc("fail_ticket_order_by_checkout_session", {
         p_clover_session_id: checkoutSessionId
