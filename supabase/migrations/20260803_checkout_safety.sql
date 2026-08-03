@@ -58,10 +58,10 @@ begin
 
   -- Release holds left by expired Clover sessions before checking availability.
   for v_expired_order in
-    update public.orders
+    update public.orders as expired_order
     set status = 'expired', checkout_attempt_id = null
-    where status = 'pending' and checkout_expires_at <= now()
-    returning *
+    where expired_order.status = 'pending' and expired_order.checkout_expires_at <= now()
+    returning expired_order.*
   loop
     update public.ticket_types
     set inventory_remaining = inventory_remaining + v_expired_order.quantity
