@@ -7,7 +7,6 @@ type CheckoutRequest = {
   checkoutAttemptId?: unknown;
   ticketTypeId?: unknown;
   quantity?: unknown;
-  attendees?: unknown;
   customer?: {
     email?: unknown;
     firstName?: unknown;
@@ -29,22 +28,6 @@ function asUuid(value: unknown): string | undefined {
     : undefined;
 }
 
-type Attendee = { firstName: string; lastName: string };
-
-function asAttendees(value: unknown, expectedCount: number): Attendee[] | undefined {
-  if (!Array.isArray(value) || value.length !== expectedCount) return undefined;
-  const attendees = value.map((attendee) => {
-    if (!attendee || typeof attendee !== "object") return undefined;
-    const record = attendee as Record<string, unknown>;
-    const firstName = asText(record.firstName, 100);
-    const lastName = asText(record.lastName, 100);
-    return firstName && lastName ? { firstName, lastName } : undefined;
-  });
-  return attendees.every((attendee): attendee is Attendee => attendee !== undefined)
-    ? attendees
-    : undefined;
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!setCors(req, res) || handleOptions(req, res)) return;
   if (req.method !== "POST") return methodNotAllowed(res, "POST, OPTIONS");
@@ -57,24 +40,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const firstName = asText(body.customer?.firstName, 100);
   const lastName = asText(body.customer?.lastName, 100);
   const phoneNumber = asText(body.customer?.phoneNumber, 30);
-  const attendees = typeof quantity === "number" && Number.isInteger(quantity)
-    ? asAttendees(body.attendees, quantity)
-    : undefined;
 
-  if (!checkoutAttemptId || !ticketTypeId || !Number.isInteger(quantity) || typeof quantity !== "number" || quantity < 1 || quantity > 10 || !email || !attendees) {
-    return res.status(400).json({ error: "Enter a valid checkout attempt, ticket type, quantity (1–10), email, and a name for every ticket holder." });
+  if (!checkoutAttemptId || !ticketTypeId || !Number.isInteger(quantity) || typeof quantity !== "number" || quantity < 1 || quantity > 10 || !email || !firstName || !lastName) {
+    return res.status(400).json({ error: "Enter a valid checkout attempt, ticket type, quantity (1–10), email, first name, and last name." });
   }
 
   const supabase = supabaseAdmin();
-  const { data: reservation, error: reservationError } = await supabase.rpc("create_or_get_ticket_order_with_attendees", {
+  const { data: reservation, error: reservationError } = await supabase.rpc("create_or_get_ticket_order", {
     p_checkout_attempt_id: checkoutAttemptId,
     p_ticket_type_id: ticketTypeId,
     p_quantity: quantity,
     p_customer_email: email,
     p_customer_first_name: firstName ?? null,
     p_customer_last_name: lastName ?? null,
-    p_customer_phone: phoneNumber ?? null,
-    p_attendees: attendees
+    p_customer_phone: phoneNumber ?? null
   });
 
   if (reservationError || !reservation?.[0]) {

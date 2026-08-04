@@ -12,22 +12,13 @@ const newAttemptId = () => crypto.randomUUID()
 
 export default function TicketCheckout({ apiBaseUrl, ticketTypeId, buttonLabel, style }: TicketCheckoutProps) {
     const [email, setEmail] = React.useState("")
+    const [firstName, setFirstName] = React.useState("")
+    const [lastName, setLastName] = React.useState("")
     const [quantity, setQuantity] = React.useState("1")
-    const [attendees, setAttendees] = React.useState([{ firstName: "", lastName: "" }])
     const [isLoading, setIsLoading] = React.useState(false)
     const [error, setError] = React.useState("")
     const isSubmittingRef = React.useRef(false)
     const checkoutAttemptIdRef = React.useRef(newAttemptId())
-
-    function updateQuantity(nextQuantity: string) {
-        const count = Number(nextQuantity)
-        setQuantity(nextQuantity)
-        setAttendees((current) => Array.from({ length: count }, (_, index) => current[index] ?? { firstName: "", lastName: "" }))
-    }
-
-    function updateAttendee(index: number, field: "firstName" | "lastName", value: string) {
-        setAttendees((current) => current.map((attendee, attendeeIndex) => attendeeIndex === index ? { ...attendee, [field]: value } : attendee))
-    }
 
     async function startCheckout(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -45,8 +36,7 @@ export default function TicketCheckout({ apiBaseUrl, ticketTypeId, buttonLabel, 
                     checkoutAttemptId: checkoutAttemptIdRef.current,
                     ticketTypeId,
                     quantity: Number(quantity),
-                    customer: { email },
-                    attendees,
+                    customer: { email, firstName, lastName },
                 }),
             })
 
@@ -81,9 +71,19 @@ export default function TicketCheckout({ apiBaseUrl, ticketTypeId, buttonLabel, 
                 <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} disabled={isLoading} style={inputStyle} />
             </label>
 
+            <label style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <span>First name:</span>
+                <input required type="text" value={firstName} onChange={(event) => setFirstName(event.target.value)} disabled={isLoading} style={inputStyle} />
+            </label>
+
+            <label style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <span>Last name:</span>
+                <input required type="text" value={lastName} onChange={(event) => setLastName(event.target.value)} disabled={isLoading} style={inputStyle} />
+            </label>
+
             <label style={{ display: "grid", gridTemplateColumns: "auto 64px", alignItems: "center", gap: 10 }}>
                 <span>Quantity:</span>
-                <select value={quantity} onChange={(event) => updateQuantity(event.target.value)} disabled={isLoading} style={{ ...inputStyle, width: "64px", padding: "12px 6px" }}>
+                <select value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={isLoading} style={{ ...inputStyle, width: "64px", padding: "12px 6px" }}>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((number) => <option key={number} value={number}>{number}</option>)}
                 </select>
             </label>
@@ -91,16 +91,6 @@ export default function TicketCheckout({ apiBaseUrl, ticketTypeId, buttonLabel, 
             <button type="submit" disabled={isLoading} style={{ border: 0, borderRadius: 0, padding: "12px 30px", height: "45px", background: "#151515", color: "#e9e9e9", cursor: isLoading ? "wait" : "pointer", fontFamily: '"Times New Roman", Times, serif', fontSize: "14px", fontWeight: 600 }}>
                 {isLoading ? "Opening checkout…" : buttonLabel}
             </button>
-
-            <fieldset style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0, display: "grid", gap: 10 }}>
-                <legend style={{ marginBottom: 4 }}>Ticket holder names:</legend>
-                {attendees.map((attendee, index) => (
-                    <div key={index} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10 }}>
-                        <input required type="text" value={attendee.firstName} onChange={(event) => updateAttendee(index, "firstName", event.target.value)} placeholder={`Ticket ${index + 1} first name`} aria-label={`Ticket ${index + 1} holder first name`} disabled={isLoading} style={inputStyle} />
-                        <input required type="text" value={attendee.lastName} onChange={(event) => updateAttendee(index, "lastName", event.target.value)} placeholder={`Ticket ${index + 1} last name`} aria-label={`Ticket ${index + 1} holder last name`} disabled={isLoading} style={inputStyle} />
-                    </div>
-                ))}
-            </fieldset>
 
             {error && <p role="alert" style={{ gridColumn: "1 / -1", margin: 0, color: "#b42318" }}>{error}</p>}
         </form>
