@@ -94,6 +94,10 @@ The server requires a unique `checkoutAttemptId` for each buyer intent. It retur
 
 Approved Clover webhooks are reconciled by checkout session ID and payment ID. An unmatched approved payment now returns an error and emits safe IDs in Vercel logs instead of being silently acknowledged.
 
+## Ticket holders
+
+The attendee migration adds one required first and last name for every purchased ticket. The Framer component expands the ticket-holder fields when quantity changes. Names are stored with the pending order and copied to each issued ticket after an approved Clover webhook.
+
 ## Not included yet
 
 - Email delivery of tickets

@@ -18,10 +18,37 @@ export default function TicketCheckout({
 }: TicketCheckoutProps) {
     const [email, setEmail] = React.useState("")
     const [quantity, setQuantity] = React.useState("1")
+    const [attendees, setAttendees] = React.useState([
+        { firstName: "", lastName: "" },
+    ])
     const [isLoading, setIsLoading] = React.useState(false)
     const [error, setError] = React.useState("")
     const isSubmittingRef = React.useRef(false)
     const checkoutAttemptIdRef = React.useRef(newAttemptId())
+
+    function updateQuantity(nextQuantity: string) {
+        const count = Number(nextQuantity)
+        setQuantity(nextQuantity)
+        setAttendees((current) =>
+            Array.from({ length: count }, (_, index) =>
+                current[index] ?? { firstName: "", lastName: "" }
+            )
+        )
+    }
+
+    function updateAttendee(
+        index: number,
+        field: "firstName" | "lastName",
+        value: string
+    ) {
+        setAttendees((current) =>
+            current.map((attendee, attendeeIndex) =>
+                attendeeIndex === index
+                    ? { ...attendee, [field]: value }
+                    : attendee
+            )
+        )
+    }
 
     async function startCheckout(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -42,6 +69,7 @@ export default function TicketCheckout({
                         ticketTypeId,
                         quantity: Number(quantity),
                         customer: { email },
+                        attendees,
                     }),
                 }
             )
@@ -98,7 +126,7 @@ export default function TicketCheckout({
                 <span>Quantity</span>
                 <select
                     value={quantity}
-                    onChange={(event) => setQuantity(event.target.value)}
+                    onChange={(event) => updateQuantity(event.target.value)}
                     disabled={isLoading}
                     style={{
                         boxSizing: "border-box",
@@ -116,6 +144,70 @@ export default function TicketCheckout({
                     ))}
                 </select>
             </label>
+
+            <fieldset
+                style={{
+                    border: 0,
+                    padding: 0,
+                    margin: 0,
+                    display: "grid",
+                    gap: 12,
+                }}
+            >
+                <legend style={{ marginBottom: 6, fontWeight: 600 }}>
+                    Ticket holders
+                </legend>
+
+                {attendees.map((attendee, index) => (
+                    <div
+                        key={index}
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                            gap: 10,
+                        }}
+                    >
+                        <input
+                            required
+                            type="text"
+                            value={attendee.firstName}
+                            onChange={(event) =>
+                                updateAttendee(index, "firstName", event.target.value)
+                            }
+                            placeholder={`Ticket ${index + 1} first name`}
+                            disabled={isLoading}
+                            aria-label={`Ticket ${index + 1} holder first name`}
+                            style={{
+                                boxSizing: "border-box",
+                                width: "100%",
+                                padding: "12px 14px",
+                                border: "1px solid #b7b7b7",
+                                borderRadius: 8,
+                                font: "inherit",
+                            }}
+                        />
+                        <input
+                            required
+                            type="text"
+                            value={attendee.lastName}
+                            onChange={(event) =>
+                                updateAttendee(index, "lastName", event.target.value)
+                            }
+                            placeholder={`Ticket ${index + 1} last name`}
+                            disabled={isLoading}
+                            aria-label={`Ticket ${index + 1} holder last name`}
+                            style={{
+                                boxSizing: "border-box",
+                                width: "100%",
+                                padding: "12px 14px",
+                                border: "1px solid #b7b7b7",
+                                borderRadius: 8,
+                                font: "inherit",
+                            }}
+                        />
+                    </div>
+                ))}
+            </fieldset>
 
             {error && (
                 <p role="alert" style={{ margin: 0, color: "#b42318" }}>
