@@ -14,26 +14,13 @@ Framer → POST /api/checkout-sessions → Clover Hosted Checkout
 
 The Framer site never receives the Clover private token or the Supabase service-role key.
 
-## Deploy it
-
-1. Create a new GitHub repository and upload the complete `web-backend` directory to it. Do not upload credential files.
-2. Create a new Supabase project. In its SQL Editor, run every file in [`supabase/migrations`](supabase/migrations) in filename order. Existing projects must run the newest [checkout-safety migration](supabase/migrations/20260803_checkout_safety.sql) before deploying its matching API code.
-3. Add each ticket tier in Supabase's Table Editor under `ticket_types`. Enter prices as whole cents: `2500` is $25.00. Set `inventory_remaining` to the number available.
-4. Import the GitHub repository into Vercel. Use the default build settings; these are Vercel serverless functions, not a frontend build.
-5. Add the environment variables listed below in Vercel's Production, Preview, and Development environments as appropriate.
-6. Deploy. Note the Vercel URL, then configure the Clover test merchant's Hosted Checkout webhook URL as `https://YOUR-VERCEL-DOMAIN/api/webhooks/clover` and generate its signing secret.
-7. In Clover, configure the hosted-checkout success and failure redirect URLs. Dashboard values override the request values. Use:
-   - `https://YOUR-FRAMER-DOMAIN/payment-success?session_id={CHECKOUT_SESSION_ID}`
-   - `https://YOUR-FRAMER-DOMAIN/payment-failed?error_code={ERROR_CODE}`
-8. Add the Framer domain (without a trailing slash) to `ALLOWED_ORIGIN` and `PUBLIC_SITE_URL`.
-
 ## Vercel environment variables
 
-Create these in Vercel's Environment Variables UI; do not commit them.
+These environment variables must first be created in Vercel, or whatever hosting site you are using.
 
 | Variable | Value |
 | --- | --- |
-| `ALLOWED_ORIGIN` | Framer site origin, e.g. `https://tickets.example.com` |
+| `ALLOWED_ORIGIN` | Framer site origin |
 | `PUBLIC_SITE_URL` | Same Framer origin used for Clover redirects |
 | `SUPABASE_URL` | Project URL from Supabase project settings |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service-role key from Supabase project settings; backend only |
@@ -42,11 +29,9 @@ Create these in Vercel's Environment Variables UI; do not commit them.
 | `CLOVER_WEBHOOK_SECRET` | Signing secret generated next to the webhook URL in Clover |
 | `CLOVER_API_BASE_URL` | `https://apisandbox.dev.clover.com` in sandbox; change to Clover's production API base URL only when going live |
 
-This project works on Vercel's free Hobby plan. Expired checkout holds are released safely when the next customer starts a checkout. If you later use a paid scheduler, you can add a periodic cleanup job as an optimization, but it is not required for payment processing.
-
 ## Framer integration contract
 
-Your Framer code override or custom component should call this endpoint from the Buy button:
+A Framer code override or custom component calls this endpoint from the Buy button:
 
 `POST https://YOUR-VERCEL-DOMAIN/api/checkout-sessions`
 
@@ -64,7 +49,7 @@ Your Framer code override or custom component should call this endpoint from the
 }
 ```
 
-`checkoutAttemptId` is required. The browser must retain it while retrying the same click; the API returns the existing unexpired Clover checkout URL instead of creating a second order. Use the ready-to-paste [Framer component](framer/TicketCheckout.tsx), which supplies this value and blocks repeat clicks synchronously.
+`checkoutAttemptId` is required. The browser must retain it while retrying the same click; the API returns the existing unexpired Clover checkout URL instead of creating a second order.
 
 On a successful response, redirect the browser to `checkoutUrl`:
 
@@ -97,12 +82,3 @@ Approved Clover webhooks are reconciled by checkout session ID and payment ID. A
 ## Ticket holders
 
 The attendee migration adds one required first and last name for every purchased ticket. The Framer component expands the ticket-holder fields when quantity changes. Names are stored with the pending order and copied to each issued ticket after an approved Clover webhook.
-
-## Not included yet
-
-- Email delivery of tickets
-- QR-code generation and door check-in app
-- Refund/cancellation workflow
-- Multiple events or event dates
-
-Those are intentionally separate from payment confirmation, so they can be added safely after the checkout has been tested.
